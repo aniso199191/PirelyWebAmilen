@@ -114,3 +114,25 @@ not.
 
 MIT for everything in this repository. The closed core is proprietary and is
 **not** covered by this license.
+
+## 洪水回弹（FloodRebound）
+
+壳子里新加的一个独立组件：**1 秒内请求超过 100 次，不返回内容，直接 302 回 ``http://127.0.0.1/``**，
+让脚本去打它自己的本机；继续加码到 300 次/秒就 302 到诱饵站。
+
+```python
+from pirelywebamilen.flood import FloodRebound
+
+flood = FloodRebound(per_second=100, decoy_to="http://decoy.example/")
+
+target = flood.check(ip)
+if target:                      # None 表示正常放行
+    return redirect(target, status_code=302)
+```
+
+要点：
+
+* 只做「计数 + 跳转」，封不封禁由调用方决定（核心判定仍然闭源）；
+* 回弹目标默认是**对方自己的** `127.0.0.1`，不是我们的节点；
+* 每个 IP 独立计数，IP 表超过 `max_ips` 整体清空，防内存打爆；
+* 时间窗每秒滑动，攻击者停手 1 秒自动恢复放行。
